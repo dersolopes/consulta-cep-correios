@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Busca de CEP Dinâmica</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 500px; margin: 50px auto; padding: 20px; box-shadow: 0 0 10px rgba(0,0,0,0.1); border-radius: 8px; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input[type="text"] { width: 100%; padding: 8px; box-sizing: border-box; }
+        .radio-group { display: flex; gap: 15px; margin-top: 5px; }
+        button { background-color: #007bff; color: white; padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; width: 100%; font-size: 16px; }
+        button:hover { background-color: #0056b3; }
+        pre { background: #f8f9fa; padding: 15px; border: 1px solid #ddd; overflow-x: auto; border-radius: 4px; max-height: 300px; }
+    </style>
+</head>
+<body>
+
+<h2>📍 Buscador de Endereço</h2>
+
+<div class="form-group">
+    <label for="cep">Digite o CEP:</label>
+    <input type="text" id="cep" placeholder="Ex: 01001000" maxlength="8">
+</div>
+
+<div class="form-group">
+    <label>Escolha o formato:</label>
+    <div class="radio-group">
+        <!-- Nota: Usamos "radio" em vez de checkbox porque o usuário deve escolher apenas UM formato por vez -->
+        <label><input type="radio" name="formato" value="json" checked> JSON</label>
+        <label><input type="radio" name="formato" value="xml"> XML</label>
+        <label><input type="radio" name="formato" value="jsonp"> JSONP</label>
+    </div>
+</div>
+
+<button onclick="buscarEndereco()">Buscar</button>
+
+<h3>Resultado:</h3>
+<pre id="resultado">O resultado aparecerá aqui...</pre>
+
+<script>
+    function buscarEndereco() {
+        const cep = document.getElementById('cep').value.trim();
+        // Pega o valor do formato que está marcado (checked)
+        const formato = document.querySelector('input[name="formato"]:checked').value;
+        const campoResultado = document.getElementById('resultado');
+
+        if (cep.length !== 8) {
+            alert('Por favor, digite um CEP válido com 8 dígitos.');
+            return;
+        }
+
+        campoResultado.textContent = "Buscando...";
+
+        // Faz a chamada para a SUA API do Spring Boot que criamos no passo anterior
+        fetch(`/api/endereco/${cep}/${formato}`)
+            .then(response => response.text()) // Usamos .text() porque XML/JSONP não são JSON puros
+            .then(dados => {
+                campoResultado.textContent = dados;
+            })
+            .catch(erro => {
+                campoResultado.textContent = "Erro ao buscar endereço: " + erro;
+            });
+    }
+</script>
+</body>
+</html>
