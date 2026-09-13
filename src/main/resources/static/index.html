@@ -13,6 +13,10 @@
         button { background-color: #007bff; color: white; padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; width: 100%; font-size: 16px; }
         button:hover { background-color: #0056b3; }
         pre { background: #f8f9fa; padding: 15px; border: 1px solid #ddd; overflow-x: auto; border-radius: 4px; max-height: 300px; }
+        .campo { margin-bottom: 8px; }
+        .campo-label { font-weight: bold; color: #555; }
+        .campo-valor { color: #333; }
+        .info-box { background: #e3f2fd; padding: 10px; border-radius: 4px; margin-top: 10px; font-size: 14px; }
     </style>
 </head>
 <body>
@@ -71,12 +75,48 @@
                 return texto;
             })
             .then(dados => {
-                campoResultado.textContent = dados;
+                // Tenta parsear como JSON para exibir formatado
+                try {
+                    const json = JSON.parse(dados);
+                    exibirResultadoFormatado(json);
+                } catch (e) {
+                    // Se não for JSON, exibe como texto (XML, JSONP)
+                    campoResultado.textContent = dados;
+                }
             })
             .catch(erro => {
                 // Exibe o texto do erro amigavelmente em vermelho no painel
                 campoResultado.innerHTML = `<span style="color: red; font-weight: bold;">⚠️ Erro: ${erro.message}</span>`;
             });
+    }
+
+    function exibirResultadoFormatado(json) {
+        const campoResultado = document.getElementById('resultado');
+        let html = '';
+
+        // Campos principais do endereço
+        const campos = ['cep', 'logradouro', 'complemento', 'bairro', 'localidade', 'uf', 'ibge', 'gia', 'ddd', 'siafi'];
+        
+        campos.forEach(campo => {
+            if (json[campo]) {
+                html += `<div class="campo">
+                    <span class="campo-label">${campo.toUpperCase()}:</span>
+                    <span class="campo-valor">${json[campo]}</span>
+                </div>`;
+            }
+        });
+
+        // Informações de metadados
+        if (json.formato || json.timestampConsulta || json.duracaoMs) {
+            html += `<div class="info-box">
+                <strong>Metadados:</strong><br>
+                Formato: ${json.formato || 'N/A'}<br>
+                Timestamp: ${json.timestampConsulta || 'N/A'}<br>
+                Duração: ${json.duracaoMs ? json.duracaoMs + 'ms' : 'N/A'}
+            </div>`;
+        }
+
+        campoResultado.innerHTML = html;
     }
 </script>
 </body>

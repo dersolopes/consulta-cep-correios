@@ -1,5 +1,7 @@
 package com.dersolopes.consultaCepCorreios.services;
 
+import com.dersolopes.consultaCepCorreios.dto.EnderecoResponse;
+import com.dersolopes.consultaCepCorreios.mapper.EnderecoMapper;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -12,8 +14,14 @@ import org.springframework.stereotype.Service;
 public class ViaCepService {
 
     private static final Logger logger = LoggerFactory.getLogger(ViaCepService.class);
+    private final EnderecoMapper enderecoMapper;
 
-    public String buscarEnderecoPorCep(String cep, String formato) {
+    public ViaCepService(EnderecoMapper enderecoMapper) {
+        this.enderecoMapper = enderecoMapper;
+    }
+
+    public EnderecoResponse buscarEnderecoPorCep(String cep, String formato) {
+        long inicio = System.currentTimeMillis();
         // 1. Criamos o cliente HTTP
         HttpClient client = HttpClient.newHttpClient();
         String url;
@@ -54,7 +62,8 @@ public class ViaCepService {
             }
             // 7. Devolvemos a resposta armazenada
             logger.info("[API_EXTERNA_SUCESSO] CEP: {}, Status: {}", cep, response.statusCode());
-            return corpoResposta;
+            long duracao = System.currentTimeMillis() - inicio;
+            return enderecoMapper.mapearJsonParaResponse(corpoResposta, formato, duracao);
         } catch (Exception e) {
             logger.error("[ERRO_SERVICO] CEP: {}, Erro: {}, StackTrace: {}", cep, e.getMessage(), e.getStackTrace()[0].toString());
             // REPASSA o erro original para o GerenciadorDeExcecoes poder ler o e.getMessage()
