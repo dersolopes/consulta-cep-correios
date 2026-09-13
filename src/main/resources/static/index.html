@@ -50,8 +50,15 @@
         const formato = document.querySelector('input[name="formato"]:checked').value;
         const campoResultado = document.getElementById('resultado');
 
+        // 2. Agora a validação de tamanho fica protegida
         if (cep.length !== 8) {
             alert('Por favor, digite um CEP válido com 8 dígitos.');
+            return;
+        }
+
+        // 3. Esta validação agora vai disparar perfeitamente para qualquer sequência de 00000000 a 99999999
+        if (new Set(cep).size === 1) {
+            alert('O CEP não pode ter todos os números repetidos.');
             return;
         }
 
@@ -96,7 +103,7 @@
 
         // Campos principais do endereço
         const campos = ['cep', 'logradouro', 'complemento', 'bairro', 'localidade', 'uf', 'ibge', 'gia', 'ddd', 'siafi'];
-        
+
         campos.forEach(campo => {
             if (json[campo]) {
                 html += `<div class="campo">

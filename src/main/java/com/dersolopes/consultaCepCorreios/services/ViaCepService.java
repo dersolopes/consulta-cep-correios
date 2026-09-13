@@ -1,7 +1,8 @@
 package com.dersolopes.consultaCepCorreios.services;
 
-import com.dersolopes.consultaCepCorreios.dto.EnderecoResponse;
+import com.dersolopes.consultaCepCorreios.entities.Endereco;
 import com.dersolopes.consultaCepCorreios.mapper.EnderecoMapper;
+import com.dersolopes.consultaCepCorreios.repositories.EnderecoRepository;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -9,18 +10,22 @@ import java.net.http.HttpResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class ViaCepService {
 
     private static final Logger logger = LoggerFactory.getLogger(ViaCepService.class);
+    private final EnderecoRepository enderecoRepository;
     private final EnderecoMapper enderecoMapper;
 
-    public ViaCepService(EnderecoMapper enderecoMapper) {
+    public ViaCepService(EnderecoRepository enderecoRepository, EnderecoMapper enderecoMapper) {
+        this.enderecoRepository = enderecoRepository;
         this.enderecoMapper = enderecoMapper;
     }
 
-    public EnderecoResponse buscarEnderecoPorCep(String cep, String formato) {
+    @Transactional
+    public String buscarEnderecoPorCep(String cep, String formato) {
         long inicio = System.currentTimeMillis();
         // 1. Criamos o cliente HTTP
         HttpClient client = HttpClient.newHttpClient();
@@ -63,11 +68,30 @@ public class ViaCepService {
             // 7. Devolvemos a resposta armazenada
             logger.info("[API_EXTERNA_SUCESSO] CEP: {}, Status: {}", cep, response.statusCode());
             long duracao = System.currentTimeMillis() - inicio;
-            return enderecoMapper.mapearJsonParaResponse(corpoResposta, formato, duracao);
+            logger.debug("[DURACAO_REQUISICAO] CEP: {}, Duracao: {}ms", cep, duracao);
+            
+            // 8. Salvar histórico no banco (apenas para JSON, não XML)
+            if ("json".equalsIgnoreCase(formato)) {
+                salvarHistorico(corpoResposta, formato, duracao);
+            }
+            
+            return corpoResposta;
         } catch (Exception e) {
             logger.error("[ERRO_SERVICO] CEP: {}, Erro: {}, StackTrace: {}", cep, e.getMessage(), e.getStackTrace()[0].toString());
             // REPASSA o erro original para o GerenciadorDeExcecoes poder ler o e.getMessage()
             throw new RuntimeException(e.getMessage(), e);
+        }
+    }
+
+    private void salvarHistorico(String json, String formato, long duracaoMs) {
+        try {
+            var dto = enderecoMapper.jsonParaDto(json, formato, duracaoMs);
+            var entidade = enderecoMapper.dtoParaEntidade(dto);
+            enderecoRepository.save(entidade);
+            logger.info("[HISTORICO_SALVO] CEP: {}, Formato: {}", dto.cep(), formato.toUpperCase());
+        } catch (Exception e) {
+            logger.error("[ERRO_SALVAR_HISTORICO] Erro ao salvar histórico: {}", e.getMessage());
+            // Não lança exceção para não quebrar a resposta da API
         }
     }
 }
