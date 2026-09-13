@@ -9,6 +9,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,6 +25,7 @@ public class ViaCepService {
         this.enderecoMapper = enderecoMapper;
     }
 
+    @Cacheable(value = "cepCache", key = "#cep + '-' + #formato")
     @Transactional
     public String buscarEnderecoPorCep(String cep, String formato) {
         long inicio = System.currentTimeMillis();
