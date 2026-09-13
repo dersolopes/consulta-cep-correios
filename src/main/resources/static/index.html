@@ -55,12 +55,27 @@
 
         // Faz a chamada para a SUA API do Spring Boot que criamos no passo anterior
         fetch(`/api/endereco/${cep}/${formato}`)
-            .then(response => response.text()) // Usamos .text() porque XML/JSONP não são JSON puros
+            .then(async response => {
+                const texto = await response.text();
+
+                // Se o Spring respondeu com erro (400, 500, etc)
+                if (!response.ok) {
+                    // Tenta extrair a mensagem de erro que mandamos do Java
+                    try {
+                        const objetoErro = JSON.parse(texto);
+                        throw new Error(objetoErro.erro);
+                    } catch(e) {
+                        throw new Error(texto || "Erro desconhecido");
+                    }
+                }
+                return texto;
+            })
             .then(dados => {
                 campoResultado.textContent = dados;
             })
             .catch(erro => {
-                campoResultado.textContent = "Erro ao buscar endereço: " + erro;
+                // Exibe o texto do erro amigavelmente em vermelho no painel
+                campoResultado.innerHTML = `<span style="color: red; font-weight: bold;">⚠️ Erro: ${erro.message}</span>`;
             });
     }
 </script>
